@@ -8,19 +8,20 @@ const monthlyProductionSchema = z.object({
 const monthsSchema = z.record(monthlyProductionSchema)
 
 export const formSchema = z.object({
-	treeName: z.string().min(2, {
-		message: "Tree name must be at least 2 characters.",
-	}),
-	treeType: z.string({
+	fruit_id: z.string({
 		required_error: "Please select a tree type.",
 	}),
 	age: z.number().min(0, {
 		message: "Age must be a positive number.",
 	}),
-	estimatedProduction: monthsSchema,
+	estimated_production: monthsSchema,
 	description: z.string().optional(),
-	latitude: z.number(),
-	longitude: z.number(),
+	farm_id: z.string(),
+	location: z.object({
+		lat: z.number(),
+		lng: z.number()
+	}),
+	image: z.any().optional()
 })
 
 export type FormSchema = z.infer<typeof formSchema>

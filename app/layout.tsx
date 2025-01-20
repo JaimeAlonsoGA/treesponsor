@@ -13,8 +13,8 @@ const defaultUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` 
 
 export const metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: " Tree Sponsor",
+  description: "Eat high quality, reward who grows it.",
 };
 
 const geistSans = Geist({
@@ -35,7 +35,7 @@ export default function RootLayout({
             <div className="flex-1 w-full flex flex-col gap-20 items-center">
               <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
                 <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-                  <div className="flex gap-5 items-center font-semibold  border-b border-green-200">
+                  <div className="flex gap-5 items-center font-semibold">
                     <h1 className="flex relative w-40">
                       <Image src={treeT} alt="tree" width={60} height={60} />
                       <span className="absolute whitespace-nowrap left-10 top-3 text-xl">ree Sponsor</span>
@@ -48,10 +48,7 @@ export default function RootLayout({
 
               <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
                 <p>
-                  Powered by{" "}
-                  <a href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs" target="_blank" className="font-bold hover:underline" rel="noreferrer">
-                    Supabase
-                  </a>
+					Become a tree sponsor today and help us plant more trees!
                 </p>
                 <ThemeSwitcher />
               </footer>

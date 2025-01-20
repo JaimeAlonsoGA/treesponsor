@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -10,90 +10,74 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@supabase/supabase-js";
 import { formSchema, FormSchema } from "./schema";
-import { processImage } from "./utils";
 import { MapComponent } from "./MapComponent";
 import { MonthlyProductionSelector } from "./MonthlyProductionSelector";
+import { processImage } from "./utils";
 
-// Initialize Supabase client
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
 export function TreeCreationForm() {
-  const [location, setLocation] = useState({ lat: 51.505, lng: -0.09 });
+  const [treeTypes, setTreeTypes] = useState<{ name: string; id: string }[]>([]);
+  const [farms, setFarms] = useState<{ name: string; id: string }[]>([]);
   const [image, setImage] = useState<File | null>(null);
+
+  useEffect(() => {
+    async function fetchSelectOptions() {
+      const { data: fruits, error: error_fruits } = await supabase.from("fruits").select();
+      const { data: farms, error: error_farms } = await supabase.from("farms").select();
+      if (error_fruits || error_farms) {
+        return;
+      }
+
+      setTreeTypes(fruits ?? []);
+      setFarms(farms ?? []);
+    }
+
+    fetchSelectOptions();
+  }, []);
 
   const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      treeName: "",
-      treeType: "",
+      fruit_id: "",
       age: 0,
-      estimatedProduction: {},
+      estimated_production: {},
+      farm_id: "",
       description: "",
-      latitude: location.lat,
-      longitude: location.lng,
+      location: { lat: 0, lng: 0 },
     },
   });
 
-  const onSubmit = useCallback(
-    async (values: FormSchema) => {
-      try {
-        // Process and upload image to Supabase Storage
-        let imageUrl = null;
-        if (image) {
-          const processedImage = await processImage(image);
-          const { data, error } = await supabase.storage.from("tree-images").upload(`${Date.now()}-${processedImage.name}`, processedImage);
-
-          if (error) throw error;
-          imageUrl = data.path;
-        }
-
-        // Insert tree data into Supabase
-        const { data, error } = await supabase.from("trees").insert({
-          ...values,
-          image_url: imageUrl,
-        });
+  const onSubmit = useCallback(async (values: FormSchema) => {
+    try {
+      const { image, ...rest } = values;
+      let imageUrl = null;
+      if (image) {
+        const processedImage = await processImage(image);
+        const { data, error } = await supabase.storage.from("tree-images").upload(`${Date.now()}-${processedImage.name}`, processedImage);
 
         if (error) throw error;
-
-        console.log("Tree created successfully:", data);
-        // Reset form or show success message
-      } catch (error) {
-        console.error("Error creating tree:", error);
-        // Show error message to user
+        imageUrl = data.path;
       }
-    },
-    [image]
-  );
+      const { data, error } = await supabase.from("trees").insert({
+        ...values,
+        image_url: imageUrl,
+      });
 
-  const handleSetLocation = useCallback(
-    (lat: number, lng: number) => {
-      setLocation({ lat, lng });
-      form.setValue("latitude", lat);
-      form.setValue("longitude", lng);
-    },
-    [form]
-  );
+      if (error) throw error;
+
+      console.log("Tree created successfully:", data);
+    } catch (error) {
+      console.error("Error creating tree:", error);
+    }
+  }, []);
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
-          name="treeName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tree Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter tree name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="treeType"
+          name="fruit_id"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Tree Type</FormLabel>
@@ -104,10 +88,36 @@ export function TreeCreationForm() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="oak">Oak</SelectItem>
-                  <SelectItem value="pine">Pine</SelectItem>
-                  <SelectItem value="maple">Maple</SelectItem>
-                  <SelectItem value="birch">Birch</SelectItem>
+                  {treeTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="farm_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Farm</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a farm" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {farms.map((farm) => (
+                    <SelectItem key={farm.id} value={farm.id}>
+                      {farm.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -131,7 +141,7 @@ export function TreeCreationForm() {
 
         <FormField
           control={form.control}
-          name="estimatedProduction"
+          name="estimated_production"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Estimated Monthly Production</FormLabel>
@@ -160,12 +170,17 @@ export function TreeCreationForm() {
 
         <FormField
           control={form.control}
-          name="latitude"
+          name="location"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Location</FormLabel>
               <FormControl>
-                <MapComponent location={location} setLocation={handleSetLocation} />
+                <MapComponent
+                  location={{ lat: field.value.lat, lng: field.value.lng }}
+                  setLocation={(lat, lng) => {
+                    field.onChange({ lat, lng });
+                  }}
+                />
               </FormControl>
               <FormDescription>Search for a location, click on the map, or use your current location to set the tree location</FormDescription>
               <FormMessage />
@@ -174,7 +189,6 @@ export function TreeCreationForm() {
         />
 
         <FormField
-          control={form.control}
           name="image"
           render={({ field }) => (
             <FormItem>
@@ -183,11 +197,11 @@ export function TreeCreationForm() {
                 <Input
                   type="file"
                   accept="image/*"
+                  {...field}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
                       setImage(file);
-                      field.onChange(file);
                     }
                   }}
                 />

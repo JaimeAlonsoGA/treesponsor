@@ -1,10 +1,11 @@
-import L from 'leaflet'
+import L from 'leaflet';
+import MapIcon from '@/assets/images/map-pin-alt.png';
 
 export const customIcon = new L.Icon({
-	iconUrl: 'https://cdn-icons-png.flaticon.com/512/740/740934.png',
-	iconSize: [32, 32],
-	iconAnchor: [16, 32],
-	popupAnchor: [0, -32],
+	iconUrl: MapIcon.src,
+	iconSize: [48, 48],
+	iconAnchor: [24, 48],
+	popupAnchor: [0, -48],
 })
 
 export async function processImage(file: File): Promise<File> {

@@ -19,6 +19,7 @@ function SearchField() {
   const provider: OpenStreetMapProvider = new OpenStreetMapProvider();
 
   useEffect(() => {
+    //@ts-ignore
     const searchControl = new GeoSearchControl({
       provider: provider,
       style: "bar",
@@ -47,7 +48,9 @@ function SearchField() {
       });
     });
 
-    return () => map.removeControl(searchControl);
+    return () => {
+      map.removeControl(searchControl);
+    };
   }, [map]);
 
   return null;
@@ -62,6 +65,7 @@ function CurrentLocationButton({ setLocation }: { setLocation: (lat: number, lng
       e.stopPropagation();
       map.locate().on("locationfound", function (e) {
         const zoom = 15;
+        console.log(e);
         setLocation(e.latitude, e.longitude);
         map.setView(e.latlng, zoom, {
           animate: false,
